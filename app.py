@@ -1,38 +1,30 @@
-from flask import Flask, render_template, request
+import streamlit as st
 import requests
 
-app = Flask(__name__)
+st.set_page_config(page_title="Weather App", page_icon="⛅", layout="centered")
 
-@app.route('/', methods=['GET', 'POST'])
-def home():
-    weather_data = None
-    error = None
+st.title("⛅ Simple Weather App")
+st.write("Enter a city name below to check the current weather.")
+
+
+city = st.text_input("City Name", placeholder="e.g., Cairo, London, Tokyo")
+
+if st.button("Get Weather") and city:
+    url = f"https://wttr.in/{city}?format=j1"
     
-    if request.method == 'POST':
-        city = request.form.get('city')
-        
-       
-        url = f"https://wttr.in/{city}?format=j1"
-        
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                
-                current = data['current_condition'][0]
-                weather_data = {
-                    'city': city.capitalize(),
-                    'temp': current['temp_C'],
-                    'description': current['weatherDesc'][0]['value'],
-                    'humidity': current['humidity'],
-                    'wind': current['windspeedKmph']
-                }
-            else:
-                error = "Could not find weather data for that city."
-        except Exception as e:
-            error = "An error occurred while connecting to the weather service."
-        
-    return render_template('index.html', weather=weather_data, error=error)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            current = data['current_condition'][0]
+            
+            
+            st.subheader(f"Weather in {city.capitalize()}")
+            st.metric(label="Temperature", value=f"{current['temp_C']} °C")
+            st.write(f"**Condition:** {current['weatherDesc'][0]['value'].capitalize()}")
+            st.write(f"**Humidity:** {current['humidity']}%")
+            st.write(f"**Wind Speed:** {current['windspeedKmph']} km/h")
+        else:
+            st.error("Could not find weather data for that city.")
+    except Exception as e:
+        st.error("An error occurred while connecting to the weather service.")
